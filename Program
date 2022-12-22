@@ -1,0 +1,275 @@
+//global variable 
+var currentScene = 0;
+var timer = 0;
+
+//bitmoji
+var drawbitmoji = function(bodyX,bodyY,bodyHeight){
+var eyes = 15;
+
+ // hoodie hood
+fill(43, 12, 242);
+ellipse(bodyX+(bodyHeight/150*5),bodyY+(bodyHeight/150*80),bodyHeight/150*110,bodyHeight/150*100);
+fill(0, 0, 0);
+ellipse(bodyX+(bodyHeight/150*5),bodyY+(bodyHeight/150*80),bodyHeight/150*90,bodyHeight/150*90);
+
+
+// hoodie 
+fill(43, 12, 242);
+quad(bodyX-(bodyHeight/150*68),bodyY+(bodyHeight/150*54),bodyX+(bodyHeight/150*81),bodyY+(bodyHeight/150*54),bodyX+(bodyHeight/150*61),bodyY+(bodyHeight/150*133),bodyX-(bodyHeight/150*38),bodyY+(bodyHeight/150*133));
+
+// name
+fill(255,255,255);
+textSize(bodyHeight/150*30);
+text("AG", bodyX-(bodyHeight/150*10), bodyY+(bodyHeight/150*100));
+
+// face
+noStroke();
+fill(210, 180, 140);
+ellipse(bodyX+(bodyHeight/150*5),bodyY-(bodyHeight/150*21),bodyHeight/150*115,bodyHeight/150*145);
+
+// eyes
+fill(10, 1, 10);
+ellipse(bodyX-(bodyHeight/150*25),bodyY-(bodyHeight/150*35),bodyHeight/150*eyes,bodyHeight/150*eyes); 
+ellipse(bodyX+(bodyHeight/150*35),bodyY-(bodyHeight/150*35),bodyHeight/150*eyes,bodyHeight/150*eyes);
+
+// nose
+fill(210, 180, 140);
+stroke(0, 0, 0);
+bezier(bodyX+(bodyHeight/150*3),bodyY+(bodyHeight/150*8),bodyX+(bodyHeight/150*4),bodyY+(bodyHeight/150*14),bodyX+(bodyHeight/150*23),bodyY+(bodyHeight/150*8),bodyX+(bodyHeight/150*7),bodyY-(bodyHeight/150*11));
+
+// smile
+fill(255, 255, 255);
+arc(bodyX+(bodyHeight/150*5),bodyY+(bodyHeight/150*20),bodyHeight/150*50,bodyHeight/150*30,0,180);
+
+// hair 
+fill(0, 0, 0);
+arc(bodyX+(bodyHeight/150*5),bodyY-(bodyHeight/150*60),bodyHeight/150*100,bodyHeight/150*90,180,360);
+triangle(bodyX-(bodyHeight/150*45),bodyY-(bodyHeight/150*64),bodyX-(bodyHeight/150*28),bodyY-(bodyHeight/150*85),bodyX-(bodyHeight/150*53),bodyY-(bodyHeight/150*14));
+triangle(bodyX+(bodyHeight/150*44),bodyY-(bodyHeight/150*78),bodyX+(bodyHeight/150*53),bodyY-(bodyHeight/150*71),bodyX+(bodyHeight/150*67),bodyY-(bodyHeight/150*13));
+
+// facial hair
+fill(0,0,0);
+line(bodyX+bodyHeight/150*4,bodyY+(bodyHeight/150*18),bodyX+(bodyHeight/150*1),bodyY+(bodyHeight/150*13));
+line(bodyX+(bodyHeight/150*8),bodyY+(bodyHeight/150*18),bodyX+(bodyHeight/150*5),bodyY+(bodyHeight/150*13));
+line(bodyX+(bodyHeight/150*12),bodyY+(bodyHeight/150*18),bodyX+(bodyHeight/150*9),bodyY+(bodyHeight/150*13));
+line(bodyX+(bodyHeight/150*16),bodyY+(bodyHeight/150*18),bodyX+(bodyHeight/150*13),bodyY+(bodyHeight/150*13));
+};
+
+//buttons settings 
+var Button = function(config) {
+    this.x = config.x || 0;
+    this.y = config.y || 0;
+    this.speed = config.speed || 0;
+    this.width = config.width || 150;
+    this.height = config.height || 50;
+    this.label = config.label || "Click";
+    this.onClick = config.onClick || function() {};
+};
+
+Button.prototype.draw = function() {
+    fill(255, 255, 255);
+    rect(this.x, this.y, this.width-40, this.height, 5);
+    fill(0, 0, 0);
+    textSize(20);
+    textAlign(LEFT, TOP);
+    text(this.label, this.x+30, this.y+this.height/4);
+};
+
+Button.prototype.isMouseInside = function() {
+    return mouseX > this.x &&
+           mouseX < (this.x + this.width) &&
+           mouseY > this.y &&
+           mouseY < (this.y + this.height);
+};
+
+Button.prototype.handleMouseClick = function() {
+    if (this.isMouseInside()) {
+        this.onClick();
+    }
+};
+
+// start button
+var startbtn = new Button({
+     x: 145,
+     y: 320,
+     label: "Start",
+    onClick: function(){
+         currentScene = 1;
+    }
+});
+
+//Tile settings and configs
+var Tile = function(x, y, face) {
+    this.x = x;
+    this.y = y;
+    this.size = 50;
+    this.face = face;
+    this.isFaceUp = false;
+    this.isMatch = false;
+};
+
+Tile.prototype.draw = function() {
+    fill(214, 247, 202);
+    strokeWeight(2);
+    rect(this.x, this.y, this.size, this.size, 10);
+    if (this.isFaceUp) {
+        image(this.face, this.x, this.y, this.size, this.size);
+    } else {
+        image(getImage("avatars/questionmark"), this.x, this.y, this.size, this.size);
+    }
+};
+
+Tile.prototype.isUnderMouse = function(x, y) {
+    return x >= this.x && x <= this.x + this.size  &&
+        y >= this.y && y <= this.y + this.size;
+};
+
+// Global config
+var NUM_COLS = 7;
+var NUM_ROWS = 4;
+
+// Declare an array of all possible faces
+var faces = [
+    getImage("avatars/primosaur-ultimate"),
+    getImage("avatars/piceratops-ultimate"),
+    getImage("avatars/orange-juice-squid"),
+    getImage("avatars/old-spice-man"),
+    getImage("avatars/mr-pants-pink"),
+    getImage("avatars/leafers-tree"),
+    getImage("avatars/aqualine-sapling"),
+    getImage("avatars/duskpin-seedling"),
+    getImage("avatars/duskpin-ultimate"),
+    getImage("avatars/leaf-red"),
+     getImage("avatars/mr-pink"),
+    getImage("avatars/mr-pants-with-hat"),
+    getImage("avatars/leafers-sapling"),
+    getImage("avatars/marcimus-purple")
+];
+
+// Make an array which has 2 of each, then randomize it
+var possibleFaces = faces.slice(0);
+var selected = [];
+for (var i = 0; i < (NUM_COLS * NUM_ROWS) / 2; i++) {
+    // Randomly pick one from the array of remaining faces
+    var randomInd = floor(random(possibleFaces.length));
+    var face = possibleFaces[randomInd];
+    // Push two onto array
+    selected.push(face);
+    selected.push(face);
+    // Remove from array
+    possibleFaces.splice(randomInd, 1);
+}
+
+// Now shuffle the elements of that array
+var shuffleArray = function(array) {
+    var counter = array.length;
+
+    // While there are elements in the array
+    while (counter > 0) {
+        // Pick a random index
+        var ind = Math.floor(Math.random() * counter);
+        // Decrease counter by 1
+        counter--;
+        // And swap the last element with it
+        var temp = array[counter];
+        array[counter] = array[ind];
+        array[ind] = temp;
+    }
+};
+shuffleArray(selected);
+
+// Create the tiles
+var tiles = [];
+for (var i = 0; i < NUM_COLS; i++) {
+    for (var j = 0; j < NUM_ROWS; j++) {
+        var tileX = i * 54 + 10;
+        var tileY = j * 54 + 40;
+        var tileFace = selected.pop();
+        tiles.push(new Tile(tileX, tileY, tileFace));
+    }
+}
+
+background(255, 255, 255);
+
+//variables for the tile system
+var numTries = 0;
+var numMatches = 0;
+var flippedTiles = [];
+var delayStartFC = null;
+
+//click function for the tiles
+mouseClicked = function() {
+    for (var i = 0; i < tiles.length; i++) {
+        var tile = tiles[i];
+        if (tile.isUnderMouse(mouseX, mouseY)) {
+            if (flippedTiles.length < 2 && !tile.isFaceUp) {
+                tile.isFaceUp = true;
+                flippedTiles.push(tile);
+                if (flippedTiles.length === 2) {
+                    numTries++;
+                    if (flippedTiles[0].face === flippedTiles[1].face) {
+                        flippedTiles[0].isMatch = true;
+                        flippedTiles[1].isMatch = true;
+                        flippedTiles.length = 0;
+                        numMatches++;
+                    }
+                    delayStartFC = frameCount;
+                }
+            } 
+            loop();
+        }
+    }
+            startbtn.handleMouseClick();
+
+};
+
+//splash scene 
+var splash = function(){
+     background(0, 255, 247);
+     fill(0, 0, 0);
+     textSize(50);
+     text("Memory Game", 45, 15);
+     textSize(20);
+     text("Click on the tile's and match 2 in a row", 40, 90);
+     drawbitmoji(195, 227, 75);
+     startbtn.draw();
+};
+
+draw = function() {
+    background(255, 255, 255);
+    if (delayStartFC && (frameCount - delayStartFC) > 30) {
+        for (var i = 0; i < tiles.length; i++) {
+            var tile = tiles[i];
+            if (!tile.isMatch) {
+                tile.isFaceUp = false;
+            }
+        }
+        flippedTiles = [];
+        delayStartFC = null;
+        noLoop();
+    }
+    
+    for (var i = 0; i < tiles.length; i++) {
+        tiles[i].draw();
+    }
+    
+    if (numMatches === tiles.length/2) {
+        fill(0, 0, 0);
+        textSize(20);
+        text("You found them all in " + numTries + " tries!", 20, 278);
+    }
+    if(currentScene === 0){
+         splash();
+    }
+        if(currentScene === 1){
+         timer++;
+         fill(0, 0, 0);
+         text("Timer:" + round(timer/ 30), 7, 6);
+        }
+        if(currentScene === 1){
+         fill(0, 0, 0);
+         text("Attempts:" + numTries, 100, 6);
+        }
+};
+
+noLoop();
